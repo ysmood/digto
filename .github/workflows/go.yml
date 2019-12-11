@@ -1,0 +1,21 @@
+name: Go
+on: [push]
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+
+    - uses: actions/checkout@v1
+ 
+    - name: build
+      run: |
+        curl -L https://git.io/fjaxx | repo=ysmood/kit bin=godev sh
+        godev test
+    - uses: codecov/codecov-action@v1
