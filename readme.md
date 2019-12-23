@@ -9,7 +9,6 @@ This project helps to handle the boring part of the proxy, such automatically ob
 So that you can easily deploy your own proxy and implement client for the proxy no matter what language you use.
 
 For example you can use just `curl` command to serve public https request without any other dependency.
-With this service, you can even let a static web page to serve requests.
 
 ## API
 
@@ -61,7 +60,7 @@ The `{id}` is required, you have to send back the `{id}` from the previous respo
 The code of [client/main.go](client/main.go) is an example of how to use the API.
 
 ```go
-package client_test
+package main
 
 import (
 	"bytes"
@@ -70,7 +69,7 @@ import (
 	"io/ioutil"
 )
 
-func Example() {
+func main() {
 	c := client.New("my-subdomain")
 
 	req, res, _ := c.Next()
