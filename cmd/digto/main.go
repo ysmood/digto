@@ -7,7 +7,7 @@ import (
 
 func main() {
 	app := kit.TasksNew("digto", "A service to help to expose http/https service to public network for integration test.")
-	app.Version("v1.1.1")
+	app.Version("v1.2.0")
 	kit.Tasks().App(app).Add(
 		kit.Task("serve", "start server").Init(serve),
 	).Do()

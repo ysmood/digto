@@ -133,6 +133,7 @@ func (c *Client) Serve(handler func(kit.GinContext)) {
 	}
 }
 
+// Stop stop serving
 func (c *Client) Stop() {
 	c.stop = true
 }
