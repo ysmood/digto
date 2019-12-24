@@ -28,7 +28,7 @@ func (c *cache) Set(data []byte) error {
 }
 
 func setupDNS(dnsProvider, dnsConfig, host string) error {
-	if dnsConfig == "" {
+	if dnsProvider == "" || dnsConfig == "" {
 		return nil
 	}
 

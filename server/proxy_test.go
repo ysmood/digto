@@ -64,6 +64,13 @@ func TestBasic(t *testing.T) {
 	assert.Equal(t, "test", body)
 	assert.Equal(t, 230, status)
 	assert.Equal(t, "value", header)
+
+	assert.Regexp(t, `Digto`, kit.Req(host).Host("digto.org").MustString())
+
+	assert.Equal(t,
+		"Digto-ID header is not set",
+		kit.Req(host+"/a").Post().Host("digto.org").MustResponse().Header.Get("Digto-Error"),
+	)
 }
 
 func TestConcurent(t *testing.T) {
@@ -118,4 +125,16 @@ func TestConcurent(t *testing.T) {
 		},
 		status,
 	)
+}
+
+func TestError(t *testing.T) {
+	dir := "tmp/" + kit.RandString(16)
+
+	_, err := server.New(dir+"/digto.db", "dnspod", "test", "digto.org", "", ":0", "")
+	assert.Error(t, err)
+
+	assert.Panics(t, func() {
+		dir = "tmp/" + kit.RandString(16)
+		_, _ = server.New(dir+"/digto.db", "", "test", "digto.org", "", ":0", "")
+	})
 }

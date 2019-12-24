@@ -170,9 +170,13 @@ func (p *proxy) handleReq(subdomain string, ctx kit.GinContext) {
 }
 
 func (p *proxy) handleRes(subdomain string, ctx kit.GinContext) {
-	wait, cancel := context.WithCancel(ctx.Request.Context())
-
 	id := ctx.GetHeader("Digto-ID")
+	if id == "" {
+		apiError(ctx, "Digto-ID header is not set")
+		return
+	}
+
+	wait, cancel := context.WithCancel(ctx.Request.Context())
 
 	c := &proxyCtx{
 		id:        id,
