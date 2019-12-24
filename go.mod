@@ -3,6 +3,7 @@ module github.com/ysmood/digto
 go 1.13
 
 require (
+	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/gin-gonic/gin v1.5.0
 	github.com/go-acme/lego/v3 v3.2.0
 	github.com/stretchr/testify v1.4.0

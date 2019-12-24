@@ -2,6 +2,7 @@ package server
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -65,6 +66,8 @@ func (ctx *Context) GetServer() *kit.ServerContext {
 
 // Serve ...
 func (ctx *Context) Serve() error {
+	ctx.server.Engine.GET("/", ctx.homePage)
+	ctx.serverTLS.Engine.GET("/", ctx.homePage)
 	ctx.server.Engine.NoRoute(ctx.proxy.handler)
 	ctx.serverTLS.Engine.NoRoute(ctx.proxy.handler)
 
@@ -90,4 +93,35 @@ func (ctx *Context) Serve() error {
 	}()
 
 	return srv.ServeTLS(ctx.serverTLS.Listener, "", "")
+}
+
+func (ctx *Context) homePage(ginCtx kit.GinContext) {
+	if ginCtx.Request.Host != ctx.host || ginCtx.Request.URL.Path != "/" {
+		ctx.proxy.handler(ginCtx)
+		return
+	}
+
+	proxyStatus, _ := json.MarshalIndent(ctx.proxy.status, "", "  ")
+
+	params := []interface{}{
+		"version", Version,
+		"proxyStatus", string(proxyStatus),
+	}
+
+	ginCtx.String(http.StatusOK, kit.S(`
+# Digto {{.version}}
+
+## Proxy Status
+
+{{.proxyStatus}}
+
+## API
+
+https://github.com/ysmood/digto	
+	`, params...))
+}
+
+// ProxyStatus ...
+func (ctx *Context) ProxyStatus() map[string]interface{} {
+	return ctx.proxy.status
 }

@@ -24,6 +24,8 @@ type proxy struct {
 	reqLeave      chan *proxyCtx
 	res           chan *proxyCtx
 	resLeave      chan *proxyCtx
+
+	status map[string]interface{}
 }
 
 type proxyCtx struct {
@@ -47,6 +49,7 @@ func newProxy(host string) *proxy {
 		reqLeave:      make(chan *proxyCtx),
 		res:           make(chan *proxyCtx),
 		resLeave:      make(chan *proxyCtx),
+		status:        map[string]interface{}{},
 	}
 }
 
@@ -100,6 +103,8 @@ func (p *proxy) eventLoop() {
 		case ctx := <-p.consumerLeave:
 			delete(p.resConsumers, ctx.id)
 		}
+
+		p.updateStatus()
 	}
 }
 
@@ -244,4 +249,13 @@ func (p *proxy) handleConsumer(ctx kit.GinContext) {
 	msg.cancel()
 
 	p.consumerLeave <- msg
+}
+
+func (p *proxy) updateStatus() {
+	p.status = map[string]interface{}{
+		"reqConsumers": len(p.reqConsumers),
+		"resConsumers": len(p.resConsumers),
+		"reqWaitlist":  len(p.reqWaitlist),
+		"resWaitlist":  len(p.resWaitlist),
+	}
 }

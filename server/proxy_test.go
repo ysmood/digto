@@ -81,7 +81,7 @@ func TestConcurent(t *testing.T) {
 	send := func(subdomain string) {
 		s := kit.Req(host).Host(subdomain + ".digto.org").MustString()
 		if s != subdomain {
-			panic("res doesn't match")
+			panic("res doesn't match " + s + " " + subdomain)
 		}
 		wg.Done()
 	}
@@ -109,4 +109,13 @@ func TestConcurent(t *testing.T) {
 	}
 
 	wg.Wait()
+
+	status := srv.ProxyStatus()
+	assert.Equal(t,
+		map[string]interface{}{
+			"reqConsumers": 0, "reqWaitlist": 0,
+			"resConsumers": 0, "resWaitlist": 0,
+		},
+		status,
+	)
 }
