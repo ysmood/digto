@@ -35,6 +35,8 @@ func TestBasic(t *testing.T) {
 	c.APIScheme = "http"
 	c.APIHeaderHost = "digto.org"
 
+	assert.Equal(t, "https://"+subdomain+"."+host, c.PublicURL())
+
 	req, send, err := c.Next()
 	kit.E(err)
 

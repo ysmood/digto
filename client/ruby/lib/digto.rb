@@ -6,15 +6,20 @@ require 'http'
 module Digto
   # Client
   class Client
-    attr_accessor :api_url, :subdomain
+    attr_accessor :api_host, :scheme, :subdomain
 
     def initialize(subdomain)
-      @api_url = 'https://digto.org'
+      @scheme = 'https'
+      @api_host = 'digto.org'
       @subdomain = subdomain
     end
 
+    def public_url
+      "#{@scheme}://#{@subdomain}.#{@api_host}"
+    end
+
     def next
-      url = "#{@api_url}/#{@subdomain}"
+      url = "#{@scheme}://#{@api_host}/#{@subdomain}"
 
       res = HTTP.get(url)
       Digto.check_res_err(res)

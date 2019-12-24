@@ -49,6 +49,11 @@ func New(subdomain string) *Client {
 	}
 }
 
+// PublicURL the url exposed to public
+func (c *Client) PublicURL() string {
+	return c.Scheme + "://" + c.Subdomain + "." + c.APIHost
+}
+
 // Next serve only once
 func (c *Client) Next() (*http.Request, func(status int, header http.Header, body io.Reader) error, error) {
 	apiURL := url.URL{

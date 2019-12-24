@@ -14,7 +14,7 @@ class DigtoTest < MiniTest::Test
     assert_equal subdomain, c.subdomain
 
     thr = Thread.new do
-      res = `curl -s https://#{subdomain}.digto.org`
+      res = `curl -s #{c.public_url}`
       assert_equal 'done', res
     end
 
