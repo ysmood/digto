@@ -10,6 +10,52 @@ So that you can easily deploy your own proxy and implement client for the proxy 
 
 For example you can use just `curl` command to serve public https request without any other dependency.
 
+## Example Client
+
+The code of [client/main.go](client/main.go) is an example of how to use the API.
+
+```go
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"github.com/ysmood/digto/client"
+	"io/ioutil"
+)
+
+func main() {
+	c := client.New("my-subdomain")
+
+	req, res, _ := c.Next()
+
+	data, _ := ioutil.ReadAll(req.Body)
+	fmt.Println(string(data)) // output "my-data"
+
+	_ = res(200, nil, bytes.NewBufferString("it works"))
+
+	// curl https://my-subdomain.digto.org -d my-data
+	// output "it works"
+}
+```
+
+Ruby client example:
+
+```ruby
+require 'digto'
+
+c = Digto::Client.new 'my-subdomain'
+
+s = c.next
+
+puts s.body.to_s # output "my-data"
+
+s.response(200, {}, body: 'it works')
+
+# curl https://my-subdomain.digto.org -d my-data
+# output "it works"
+```
+
 ## API
 
 A sequence OAuth diagram example:
@@ -54,35 +100,6 @@ Your-Own-Headers: value
 ```
 
 The `{id}` is required, you have to send back the `{id}` from the previous response.
-
-## Example Client
-
-The code of [client/main.go](client/main.go) is an example of how to use the API.
-
-```go
-package main
-
-import (
-	"bytes"
-	"fmt"
-	"github.com/ysmood/digto/client"
-	"io/ioutil"
-)
-
-func main() {
-	c := client.New("my-subdomain")
-
-	req, res, _ := c.Next()
-
-	data, _ := ioutil.ReadAll(req.Body)
-	fmt.Println(string(data)) // output "my-data"
-
-	_ = res(200, nil, bytes.NewBufferString("it works"))
-
-	// curl https://my-subdomain.digto.org -d my-data
-	// output "it works"
-}
-```
 
 ## Setup private digto server
 
