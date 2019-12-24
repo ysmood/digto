@@ -72,7 +72,7 @@ func TestServe(t *testing.T) {
 	c.APIHeaderHost = "digto.org"
 
 	path := ""
-	go c.Serve(func(ctx kit.GinContext) {
+	go c.One(func(ctx kit.GinContext) {
 		path = ctx.Request.URL.Path
 		ctx.String(230, "done")
 		wg.Done()

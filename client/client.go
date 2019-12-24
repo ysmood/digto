@@ -29,8 +29,6 @@ type Client struct {
 	// Concurrent concurrent request when serving
 	Concurrent int
 
-	stop bool
-
 	httpClient *http.Client
 }
 
