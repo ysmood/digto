@@ -11,7 +11,7 @@ import (
 	"github.com/ysmood/kit"
 )
 
-// One serve only one request
+// One serves only one request with gin handler
 func (c *Client) One(handler func(kit.GinContext)) error {
 	engine := gin.New()
 	engine.NoRoute(handler)
@@ -37,7 +37,7 @@ func (c *Client) One(handler func(kit.GinContext)) error {
 	return send(res.status, res.header, body)
 }
 
-// Serve proxy request to a tcp address. Default scheme is http.
+// Serve will proxy requests to the tcp address. Default scheme is http.
 func (c *Client) Serve(addr, scheme string) {
 	if scheme == "" {
 		scheme = "http"

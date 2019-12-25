@@ -28,7 +28,7 @@ type Client struct {
 	httpClient *http.Client
 }
 
-// New new default client
+// New creates a client with default config
 func New(subdomain string) *Client {
 	return &Client{
 		Scheme:        "https",
@@ -40,12 +40,12 @@ func New(subdomain string) *Client {
 	}
 }
 
-// PublicURL the url exposed to public
+// PublicURL returns the url exposed to public
 func (c *Client) PublicURL() string {
 	return c.Scheme + "://" + c.Subdomain + "." + c.APIHost
 }
 
-// Next serve only once
+// Next gets the next request from public
 func (c *Client) Next() (*http.Request, func(status int, header http.Header, body io.Reader) error, error) {
 	apiURL := url.URL{
 		Scheme: c.APIScheme,

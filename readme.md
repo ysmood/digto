@@ -1,6 +1,6 @@
 # Digto
 
-[![GoDoc](https://godoc.org/github.com/ysmood/digto?status.svg)](http://godoc.org/github.com/ysmood/digto)
+[![GoDoc](https://godoc.org/github.com/ysmood/digto?status.svg)](https://godoc.org/github.com/ysmood/digto)
 [![codecov](https://codecov.io/gh/ysmood/digto/branch/master/graph/badge.svg)](https://codecov.io/gh/ysmood/digto)
 [![goreport](https://goreportcard.com/badge/github.com/ysmood/digto)](https://goreportcard.com/report/github.com/ysmood/digto)
 
@@ -8,7 +8,7 @@ A service to help to expose http/https service to public network for integration
 This project helps to handle the boring part of the proxy, such automatically obtain and renew the https certificate.
 So that you can easily deploy your own proxy and implement client for the proxy no matter what language you use.
 
-For example you can use just `curl` command to serve public https request without any other dependency.
+For example you can easily use just `curl` command to serve public https request without any other dependency.
 
 ## Proxy a local port
 
@@ -18,7 +18,29 @@ Run `digto :8080 my-domain` to proxy "https://my-domain.digto.org" to port 8080
 
 ## Example Client
 
-The code of [client/main.go](client/main.go) is an example of how to use the API.
+### `curl` only:
+
+Open a terminal run
+
+```bash
+curl https://my-subdomain.digto.org/path -d 'ping'
+# pong
+```
+
+Open another terminal run:
+
+```bash
+curl -i https://digto.org/my-subdomain
+# HTTP/2 200 
+# accept: */*
+# digto-id: 3dd4e560
+
+# ping
+
+curl https://digto.org/my-subdomain -H 'digto-id: 3dd4e560' -d 'pong'
+```
+
+### Go
 
 ```go
 package main
@@ -45,7 +67,7 @@ func main() {
 }
 ```
 
-Ruby client example:
+### Ruby
 
 ```ruby
 require 'digto'

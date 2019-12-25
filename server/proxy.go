@@ -53,6 +53,23 @@ func newProxy(host string) *proxy {
 	}
 }
 
+func (p *proxy) handler(ctx kit.GinContext) {
+	if ctx.Request.Host == p.host {
+		ctx.Status(200)
+
+		subdomain := strings.Trim(ctx.Request.URL.Path, "/")
+		if ctx.Request.Method == http.MethodGet {
+			p.handleReq(subdomain, ctx)
+			return
+		}
+
+		p.handleRes(subdomain, ctx)
+		return
+	}
+
+	p.handleConsumer(ctx)
+}
+
 func (p *proxy) eventLoop() {
 	for {
 		select {
@@ -135,28 +152,11 @@ func (p *proxy) del(dict map[string]map[string]*proxyCtx, subdomain, id string) 
 	}
 }
 
-func (p *proxy) handler(ctx kit.GinContext) {
-	if ctx.Request.Host == p.host {
-		ctx.Status(200)
-
-		subdomain := strings.Trim(ctx.Request.URL.Path, "/")
-		if ctx.Request.Method == http.MethodGet {
-			p.handleReq(subdomain, ctx)
-			return
-		}
-
-		p.handleRes(subdomain, ctx)
-		return
-	}
-
-	p.handleConsumer(ctx)
-}
-
 func (p *proxy) handleReq(subdomain string, ctx kit.GinContext) {
 	wait, cancel := context.WithCancel(ctx.Request.Context())
 
 	c := &proxyCtx{
-		id:        kit.RandString(16),
+		id:        randString(),
 		subdomain: subdomain,
 		cancel:    cancel,
 		ctx:       ctx,
@@ -194,7 +194,7 @@ func (p *proxy) handleRes(subdomain string, ctx kit.GinContext) {
 func (p *proxy) handleConsumer(ctx kit.GinContext) {
 	wait, cancel := context.WithCancel(ctx.Request.Context())
 	subdomain := strings.Replace(ctx.Request.Host, "."+p.host, "", 1)
-	id := kit.RandString(16)
+	id := randString()
 
 	msg := &proxyCtx{
 		subdomain: subdomain,

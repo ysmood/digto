@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/base64"
 	"net/http"
 	"time"
 
@@ -81,4 +82,8 @@ func setupCert(host, dnsProvider, dnsConfig, caDirURL string, certCache *storer.
 func apiError(ginCtx kit.GinContext, msg string) {
 	ginCtx.Writer.Header().Set("Digto-Error", msg)
 	ginCtx.AbortWithStatus(http.StatusBadRequest)
+}
+
+func randString() string {
+	return base64.RawURLEncoding.EncodeToString(kit.RandBytes(8))
 }
