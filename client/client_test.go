@@ -2,6 +2,7 @@ package client_test
 
 import (
 	"bytes"
+	"net/http"
 	"sync"
 	"testing"
 
@@ -24,9 +25,10 @@ func TestBasic(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
-	var senderRes string
 	go func() {
-		senderRes = kit.Req("http://" + host + "/path").Host(subdomain + ".digto.org").MustString()
+		senderRes := kit.Req("http://" + host + "/path").Host(subdomain + ".digto.org").MustString()
+		assert.Equal(t, "done", senderRes)
+
 		wg.Done()
 	}()
 
@@ -45,7 +47,40 @@ func TestBasic(t *testing.T) {
 	kit.E(send(200, nil, bytes.NewBufferString("done")))
 
 	wg.Wait()
-	assert.Equal(t, "done", senderRes)
+}
+
+func TestOne(t *testing.T) {
+	s, err := server.New("tmp/"+kit.RandString(16)+"/digto.db", "", "", "digto.org", "", ":0", "")
+	kit.E(err)
+
+	go func() { kit.E(s.Serve()) }()
+
+	host := s.GetServer().Listener.Addr().String()
+
+	subdomain := kit.RandString(16)
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+
+	go func() {
+		senderRes := kit.Req("http://" + host + "/path").Host(subdomain + ".digto.org").MustString()
+		assert.Equal(t, "done", senderRes)
+
+		wg.Done()
+	}()
+
+	c := client.New(subdomain)
+	c.APIHost = host
+	c.APIScheme = "http"
+	c.APIHeaderHost = "digto.org"
+
+	kit.E(c.One(func(ctx kit.GinContext) {
+		path := ctx.Request.URL.Path
+		assert.Equal(t, "/path", path)
+		ctx.String(230, "done")
+		wg.Done()
+	}))
+
+	wg.Wait()
 }
 
 func TestServe(t *testing.T) {
@@ -60,9 +95,10 @@ func TestServe(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 
-	var senderRes string
 	go func() {
-		senderRes = kit.Req("http://" + host + "/path").Host(subdomain + ".digto.org").MustString()
+		senderRes := kit.Req("http://" + host + "/path").Host(subdomain + ".digto.org").MustString()
+		assert.Equal(t, "done "+subdomain+".digto.org", senderRes)
+
 		wg.Done()
 	}()
 
@@ -71,15 +107,16 @@ func TestServe(t *testing.T) {
 	c.APIScheme = "http"
 	c.APIHeaderHost = "digto.org"
 
-	path := ""
-	go c.One(func(ctx kit.GinContext) {
-		path = ctx.Request.URL.Path
-		ctx.String(230, "done")
+	srv := kit.MustServer(":0")
+
+	srv.Engine.GET("/path", func(ctx kit.GinContext) {
+		ctx.String(http.StatusOK, "done "+ctx.Request.Host)
 		wg.Done()
 	})
 
-	wg.Wait()
+	go srv.MustDo()
 
-	assert.Equal(t, "/path", path)
-	assert.Equal(t, "done", senderRes)
+	go c.Serve(srv.Listener.Addr().String(), "")
+
+	wg.Wait()
 }

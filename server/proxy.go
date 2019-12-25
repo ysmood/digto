@@ -215,6 +215,7 @@ func (p *proxy) handleConsumer(ctx kit.GinContext) {
 			msg.ctx.Writer.Header().Add(k, v)
 		}
 	}
+	msg.ctx.Writer.Header().Add("Host", ctx.Request.Host)
 
 	_, err := io.Copy(msg.ctx.Writer, ctx.Request.Body)
 	if err != nil {

@@ -43,6 +43,7 @@ func TestBasic(t *testing.T) {
 
 	assert.Equal(t, "data", req.MustString())
 	assert.Equal(t, "POST", req.MustResponse().Header.Get("Digto-Method"))
+	assert.Equal(t, "a.digto.org", req.MustResponse().Header.Get("Host"))
 	assert.Equal(t, "/path", req.MustResponse().Header.Get("Digto-URL"))
 	assert.Equal(t, "header", req.MustResponse().Header.Get("My"))
 	assert.Equal(t, 200, req.MustResponse().StatusCode)

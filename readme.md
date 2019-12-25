@@ -10,6 +10,12 @@ So that you can easily deploy your own proxy and implement client for the proxy 
 
 For example you can use just `curl` command to serve public https request without any other dependency.
 
+## Proxy a local port
+
+Install client: `curl -L https://git.io/fjaxx | repo=ysmood/digto bin=digto sh`
+
+Run `digto :8080 my-domain` to proxy "https://my-domain.digto.org" to port 8080
+
 ## Example Client
 
 The code of [client/main.go](client/main.go) is an example of how to use the API.
@@ -32,7 +38,7 @@ func main() {
 	data, _ := ioutil.ReadAll(req.Body)
 	fmt.Println(string(data)) // output "my-data"
 
-	_ = res(200, nil, bytes.NewBufferString("it works"))
+	res(200, nil, bytes.NewBufferString("it works"))
 
 	// curl https://my-subdomain.digto.org -d my-data
 	// output "it works"
@@ -109,7 +115,7 @@ Install server: `curl -L https://git.io/fjaxx | repo=ysmood/digto bin=digto sh`
 
 For help run `digto --help`.
 
-Example to serve `digto --dns-config {token} --host test.com`
+Example to serve `digto serve --dns-config {token} --host test.com`
 
 The server will add two records on your dns provider, one is like `@.test.com 1.2.3.4`,
 the other one with wildcard like `*.test.com 1.2.3.4`.

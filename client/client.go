@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/ysmood/kit"
 )
@@ -26,9 +25,6 @@ type Client struct {
 	// Host api header host
 	APIHeaderHost string
 
-	// Concurrent concurrent request when serving
-	Concurrent int
-
 	httpClient *http.Client
 }
 
@@ -40,10 +36,7 @@ func New(subdomain string) *Client {
 		APIHost:       "digto.org",
 		APIHeaderHost: "digto.org",
 		Subdomain:     subdomain,
-		Concurrent:    2,
-		httpClient: &http.Client{
-			Timeout: 2 * time.Minute,
-		},
+		httpClient:    &http.Client{},
 	}
 }
 
@@ -65,14 +58,17 @@ func (c *Client) Next() (*http.Request, func(status int, header http.Header, bod
 		return nil, nil, err
 	}
 
-	senderURL, _ := url.Parse(senderRes.Header.Get("Digto-URL"))
-
-	receiverReq := &http.Request{
-		URL:    senderURL,
-		Method: senderRes.Header.Get("Digto-Method"),
-		Header: senderRes.Header,
-		Body:   senderRes.Body,
+	receiverReq, err := http.NewRequestWithContext(
+		senderRes.Request.Context(),
+		senderRes.Header.Get("Digto-Method"),
+		c.PublicURL()+senderRes.Header.Get("Digto-URL"),
+		senderRes.Body,
+	)
+	if err != nil {
+		return nil, nil, err
 	}
+
+	receiverReq.Host = senderRes.Header.Get("Host")
 
 	send := func(status int, header http.Header, body io.Reader) error {
 		headerToSend := []string{
@@ -100,6 +96,10 @@ func (c *Client) Next() (*http.Request, func(status int, header http.Header, bod
 }
 
 func resError(res *http.Response, err error) (*http.Response, error) {
+	if err != nil {
+		return nil, err
+	}
+
 	errMsg := res.Header.Get("Digto-Error")
 	if errMsg != "" {
 		return res, errors.New(errMsg)
