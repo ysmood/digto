@@ -82,6 +82,7 @@ func setupCert(host, dnsProvider, dnsConfig, caDirURL string, certCache *storer.
 func apiError(ginCtx kit.GinContext, msg string) {
 	ginCtx.Writer.Header().Set("Digto-Error", msg)
 	ginCtx.AbortWithStatus(http.StatusBadRequest)
+	_, _ = ginCtx.Writer.WriteString(msg)
 }
 
 func randString() string {

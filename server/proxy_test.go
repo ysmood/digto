@@ -72,6 +72,10 @@ func TestBasic(t *testing.T) {
 		"Digto-ID header is not set",
 		kit.Req(host+"/a").Post().Host("digto.org").MustResponse().Header.Get("Digto-Error"),
 	)
+	assert.Equal(t,
+		"Digto-ID header is not set",
+		kit.Req(host+"/a").Post().Host("digto.org").MustString(),
+	)
 }
 
 func TestConcurent(t *testing.T) {

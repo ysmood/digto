@@ -110,7 +110,7 @@ Other-Headers: value
 <binary body>
 ```
 
-Digto will proxy the rest the headers transparently.
+Digto will proxy the rest headers transparently.
 
 ### POST `/{subdomain}`
 
@@ -128,6 +128,10 @@ Your-Own-Headers: value
 ```
 
 The `{id}` is required, you have to send back the `{id}` from the previous response.
+
+### Error
+
+If protocol level error happens the response will have the `Digto-Error: reason` header to report the reason.
 
 ## Setup private digto server
 
