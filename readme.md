@@ -31,8 +31,9 @@ Open another terminal run:
 
 ```bash
 curl -i https://digto.org/my-subdomain
-# HTTP/2 200 
-# accept: */*
+# HTTP/2 200
+# digto-method: GET
+# digto-url: /path
 # digto-id: 3dd4e560
 
 # ping
