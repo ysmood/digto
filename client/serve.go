@@ -38,7 +38,7 @@ func (c *Client) One(handler func(kit.GinContext)) error {
 }
 
 // Serve will proxy requests to the tcp address. Default scheme is http.
-func (c *Client) Serve(addr, scheme string) {
+func (c *Client) Serve(addr, overrideHost, scheme string) {
 	if scheme == "" {
 		scheme = "http"
 	}
@@ -51,10 +51,13 @@ func (c *Client) Serve(addr, scheme string) {
 		}
 
 		go func() {
-			log.Println("[access log]", req.URL.String())
+			log.Println("[access log]", kit.C(req.Method, "green"), req.URL.String())
 
 			req.URL.Scheme = scheme
 			req.URL.Host = addr
+			if overrideHost != "" {
+				req.Host = overrideHost
+			}
 
 			httpClient := &http.Client{}
 			res, err := httpClient.Do(req)

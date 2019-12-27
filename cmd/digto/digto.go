@@ -36,6 +36,7 @@ func proxy(cmd kit.TaskCmd) func() {
 
 	addr := cmd.Arg("addr", "the tcp address to proxy to").Default(":3000").TCP()
 	subdomain := cmd.Arg("subdomain", "the subdomain to use, default is random string").String()
+	hostHeader := cmd.Arg("host-header", "override the host header when making request to addr").String()
 	scheme := cmd.Flag("scheme", "scheme to when send request to addr").Short('s').Default("http").Enum("http", "https")
 
 	return func() {
@@ -49,6 +50,6 @@ func proxy(cmd kit.TaskCmd) func() {
 
 		kit.Log("digto client:", c.PublicURL(), kit.C("->", "cyan"), addr)
 
-		c.Serve(addr, *scheme)
+		c.Serve(addr, *hostHeader, *scheme)
 	}
 }

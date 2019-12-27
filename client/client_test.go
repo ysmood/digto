@@ -97,7 +97,7 @@ func TestServe(t *testing.T) {
 
 	go func() {
 		senderRes := kit.Req("http://" + host + "/path").Host(subdomain + ".digto.org").MustString()
-		assert.Equal(t, "done "+subdomain+".digto.org", senderRes)
+		assert.Equal(t, "done test.com", senderRes)
 
 		wg.Done()
 	}()
@@ -116,7 +116,7 @@ func TestServe(t *testing.T) {
 
 	go srv.MustDo()
 
-	go c.Serve(srv.Listener.Addr().String(), "")
+	go c.Serve(srv.Listener.Addr().String(), "test.com", "")
 
 	wg.Wait()
 }
