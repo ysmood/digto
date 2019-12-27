@@ -18,7 +18,7 @@ type proxy struct {
 	resWaitlist  map[string]*proxyCtx
 
 	consumer      chan *proxyCtx
-	reqDone       chan *proxyCtx
+	reqHeaderDone chan *proxyCtx
 	consumerLeave chan *proxyCtx
 	req           chan *proxyCtx
 	reqLeave      chan *proxyCtx
@@ -43,7 +43,7 @@ func newProxy(host string) *proxy {
 		reqWaitlist:   map[string]map[string]*proxyCtx{},
 		resWaitlist:   map[string]*proxyCtx{},
 		consumer:      make(chan *proxyCtx),
-		reqDone:       make(chan *proxyCtx),
+		reqHeaderDone: make(chan *proxyCtx),
 		consumerLeave: make(chan *proxyCtx),
 		req:           make(chan *proxyCtx),
 		reqLeave:      make(chan *proxyCtx),
@@ -98,7 +98,7 @@ func (p *proxy) eventLoop() {
 		case ctx := <-p.reqLeave:
 			p.del(p.reqWaitlist, ctx.subdomain, ctx.id)
 
-		case ctx := <-p.reqDone:
+		case ctx := <-p.reqHeaderDone:
 			p.del(p.reqConsumers, ctx.subdomain, ctx.id)
 			p.resConsumers[ctx.id] = ctx
 
@@ -118,6 +118,7 @@ func (p *proxy) eventLoop() {
 			delete(p.resWaitlist, ctx.id)
 
 		case ctx := <-p.consumerLeave:
+			p.del(p.reqConsumers, ctx.subdomain, ctx.id)
 			delete(p.resConsumers, ctx.id)
 		}
 
@@ -226,7 +227,7 @@ func (p *proxy) handleConsumer(ctx kit.GinContext) {
 
 	wait, cancel = context.WithCancel(ctx.Request.Context())
 	msg.cancel = cancel
-	p.reqDone <- msg
+	p.reqHeaderDone <- msg
 	<-wait.Done()
 
 	status := msg.ctx.GetHeader("Digto-Status")

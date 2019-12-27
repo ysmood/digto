@@ -16,7 +16,6 @@ jobs:
  
     - name: build
       run: |
-        export PATH=$PATH:$(go env GOPATH)/bin
         curl -L https://git.io/fjaxx | repo=ysmood/kit bin=godev sh
         godev -l
     - uses: codecov/codecov-action@v1

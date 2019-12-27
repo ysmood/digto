@@ -96,7 +96,7 @@ func TestServe(t *testing.T) {
 	wg.Add(2)
 
 	go func() {
-		senderRes := kit.Req("http://" + host + "/path").Host(subdomain + ".digto.org").MustString()
+		senderRes := kit.Req("http://"+host+"/path").Host(subdomain+".digto.org").Header("A", "B").MustString()
 		assert.Equal(t, "done test.com", senderRes)
 
 		wg.Done()
@@ -111,6 +111,7 @@ func TestServe(t *testing.T) {
 
 	srv.Engine.GET("/path", func(ctx kit.GinContext) {
 		ctx.String(http.StatusOK, "done "+ctx.Request.Host)
+		assert.Equal(t, "B", ctx.GetHeader("A"))
 		wg.Done()
 	})
 

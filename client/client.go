@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/ysmood/kit"
 )
@@ -28,6 +29,9 @@ type Client struct {
 	httpClient *http.Client
 }
 
+// Send response back to the public request
+type Send func(status int, header http.Header, body io.Reader) error
+
 // New creates a client with default config
 func New(subdomain string) *Client {
 	return &Client{
@@ -46,7 +50,7 @@ func (c *Client) PublicURL() string {
 }
 
 // Next gets the next request from public
-func (c *Client) Next() (*http.Request, func(status int, header http.Header, body io.Reader) error, error) {
+func (c *Client) Next() (*http.Request, Send, error) {
 	apiURL := url.URL{
 		Scheme: c.APIScheme,
 		Host:   c.APIHost,
@@ -66,6 +70,12 @@ func (c *Client) Next() (*http.Request, func(status int, header http.Header, bod
 	)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	for k, v := range senderRes.Header {
+		if !strings.HasPrefix(k, "Digto") {
+			receiverReq.Header[k] = v
+		}
 	}
 
 	receiverReq.Host = senderRes.Header.Get("Host")
