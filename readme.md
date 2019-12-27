@@ -5,9 +5,7 @@
 [![goreport](https://goreportcard.com/badge/github.com/ysmood/digto)](https://goreportcard.com/report/github.com/ysmood/digto)
 
 A service to help to expose http/https service to public network for integration test.
-This project helps to handle the boring part of the proxy, such automatically obtain and renew the https certificate.
-So that you can easily deploy your own proxy and implement client for the proxy no matter what language you use.
-
+All the interface is designed to be easily programmable.
 For example you can easily use just `curl` command to serve public https request without any other dependency.
 
 ## Proxy a local port
@@ -35,7 +33,7 @@ curl -i https://digto.org/my-subdomain
 # digto-method: GET
 # digto-url: /path
 # digto-id: 3dd4e560
-
+#
 # ping
 
 curl https://digto.org/my-subdomain -H 'digto-id: 3dd4e560' -d 'pong'
@@ -160,6 +158,9 @@ You can use my [demo server](https://digto.org) for free, you can also setup you
 Install server: `curl -L https://git.io/fjaxx | repo=ysmood/digto bin=digto sh`
 
 For help run `digto --help`.
+
+This project helps to handle the boring part of the proxy server, such automatically obtain and renew the https certificate.
+So that all you need is to have the permission of the DNS provider and run the server like the example below.
 
 Example to serve `digto serve --dns-config {token} --host test.com`
 
