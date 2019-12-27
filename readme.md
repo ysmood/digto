@@ -68,6 +68,25 @@ func main() {
 }
 ```
 
+### Node.js
+
+```js
+const digto = require('digto')
+
+;(async() => {
+	const c = digto({ subdomain: 'my-subdomain' })
+
+	const [res, send] = await c.next()
+
+	console.log(res) // # output "my-data"
+
+	await send({ body: 'it works' })
+
+	// curl https://my-subdomain.digto.org -d my-data
+	// output "it works"
+})()
+```
+
 ### Ruby
 
 ```ruby
