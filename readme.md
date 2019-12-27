@@ -47,24 +47,24 @@ curl https://digto.org/my-subdomain -H 'digto-id: 3dd4e560' -d 'pong'
 package main
 
 import (
-	"bytes"
-	"fmt"
-	"github.com/ysmood/digto/client"
-	"io/ioutil"
+    "bytes"
+    "fmt"
+    "github.com/ysmood/digto/client"
+    "io/ioutil"
 )
 
 func main() {
-	c := client.New("my-subdomain")
+    c := client.New("my-subdomain")
 
-	req, res, _ := c.Next()
+    req, res, _ := c.Next()
 
-	data, _ := ioutil.ReadAll(req.Body)
-	fmt.Println(string(data)) // output "my-data"
+    data, _ := ioutil.ReadAll(req.Body)
+    fmt.Println(string(data)) // output "my-data"
 
-	res(200, nil, bytes.NewBufferString("it works"))
+    res(200, nil, bytes.NewBufferString("it works"))
 
-	// curl https://my-subdomain.digto.org -d my-data
-	// output "it works"
+    // curl https://my-subdomain.digto.org -d my-data
+    // output "it works"
 }
 ```
 
@@ -74,16 +74,16 @@ func main() {
 const digto = require('digto')
 
 ;(async() => {
-	const c = digto({ subdomain: 'my-subdomain' })
+    const c = digto({ subdomain: 'my-subdomain' })
 
-	const [res, send] = await c.next()
+    const [res, send] = await c.next()
 
-	console.log(res) // # output "my-data"
+    console.log(res) // # output "my-data"
 
-	await send({ body: 'it works' })
+    await send({ body: 'it works' })
 
-	// curl https://my-subdomain.digto.org -d my-data
-	// output "it works"
+    // curl https://my-subdomain.digto.org -d my-data
+    // output "it works"
 })()
 ```
 
