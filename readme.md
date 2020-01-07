@@ -10,7 +10,7 @@ For example you can easily use just `curl` command to serve public https request
 
 ## Proxy a local port
 
-Install client: `curl -L https://git.io/fjaxx | repo=ysmood/digto bin=digto sh`
+Install client: `curl -L https://git.io/fjaxx | repo=ysmood/digto sh`
 
 Run `digto :8080 my-domain` to proxy "https://my-domain.digto.org" to port 8080
 
@@ -155,7 +155,7 @@ If protocol level error happens the response will have the `Digto-Error: reason`
 
 You can use my [demo server](https://digto.org) for free, you can also setup your own.
 
-Install server: `curl -L https://git.io/fjaxx | repo=ysmood/digto bin=digto sh`
+Install server: `curl -L https://git.io/fjaxx | repo=ysmood/digto sh`
 
 For help run `digto --help`.
 
