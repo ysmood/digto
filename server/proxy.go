@@ -1,312 +1,72 @@
 package server
 
 import (
-	"context"
-	"io"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/ysmood/kit"
 )
 
 type proxy struct {
-	host         string
-	reqConsumers map[string]map[string]*proxyCtx
-	resConsumers map[string]*proxyCtx
-	reqWaitlist  map[string]map[string]*proxyCtx
-	resWaitlist  map[string]*proxyCtx
-
-	consumer      chan *proxyCtx
-	reqHeaderDone chan *proxyCtx
-	consumerLeave chan *proxyCtx
-	req           chan *proxyCtx
-	reqLeave      chan *proxyCtx
-	res           chan *proxyCtx
-	resLeave      chan *proxyCtx
-
+	host   string
 	status map[string]interface{}
 }
 
-type proxyCtx struct {
-	subdomain string
+type itemType int
+
+const (
+	itemRead = iota
+	itemSend
+	itemReq
+	itemWSReq
+)
+
+type proxyItem struct {
 	id        string
+	itemType  itemType
+	subdomain string
 	ctx       kit.GinContext
-	cancel    context.CancelFunc
 }
 
 func newProxy(host string) *proxy {
 	return &proxy{
-		host:          host,
-		reqConsumers:  map[string]map[string]*proxyCtx{},
-		resConsumers:  map[string]*proxyCtx{},
-		reqWaitlist:   map[string]map[string]*proxyCtx{},
-		resWaitlist:   map[string]*proxyCtx{},
-		consumer:      make(chan *proxyCtx),
-		reqHeaderDone: make(chan *proxyCtx),
-		consumerLeave: make(chan *proxyCtx),
-		req:           make(chan *proxyCtx),
-		reqLeave:      make(chan *proxyCtx),
-		res:           make(chan *proxyCtx),
-		resLeave:      make(chan *proxyCtx),
-		status:        map[string]interface{}{},
+		host: host,
 	}
 }
 
 func (p *proxy) handler(ctx kit.GinContext) {
+	var itemType itemType
+	var subdomain string
+
 	if ctx.Request.Host == p.host {
-		ctx.Status(200)
-
-		subdomain := strings.Trim(ctx.Request.URL.Path, "/")
+		subdomain = strings.Trim(ctx.Request.URL.Path, "/")
 		if ctx.Request.Method == http.MethodGet {
-			p.handleReq(subdomain, ctx)
-			return
+			itemType = itemRead
+		} else {
+			itemType = itemSend
 		}
-
-		p.handleRes(subdomain, ctx)
-		return
-	}
-
-	p.handleConsumer(ctx)
-}
-
-func (p *proxy) eventLoop() {
-	for {
-		select {
-		case ctx := <-p.consumer:
-			p.add(p.reqConsumers, ctx.subdomain, ctx.id, ctx)
-			reqProxyCtx := p.dequeue(p.reqWaitlist, ctx.subdomain)
-			if reqProxyCtx != nil {
-				p.del(p.reqConsumers, ctx.subdomain, ctx.id)
-				ctx.ctx = reqProxyCtx.ctx
-				cancel := ctx.cancel
-				ctx.cancel = reqProxyCtx.cancel
-				cancel()
-			}
-
-		case ctx := <-p.req:
-			p.add(p.reqWaitlist, ctx.subdomain, ctx.id, ctx)
-			consumer := p.dequeue(p.reqConsumers, ctx.subdomain)
-			if consumer != nil {
-				p.del(p.reqWaitlist, ctx.subdomain, ctx.id)
-				consumer.ctx = ctx.ctx
-				cancel := consumer.cancel
-				consumer.cancel = ctx.cancel
-				cancel()
-			}
-
-		case ctx := <-p.reqLeave:
-			p.del(p.reqWaitlist, ctx.subdomain, ctx.id)
-
-		case ctx := <-p.reqHeaderDone:
-			p.del(p.reqConsumers, ctx.subdomain, ctx.id)
-			p.resConsumers[ctx.id] = ctx
-
-		case ctx := <-p.res:
-			p.resWaitlist[ctx.id] = ctx
-			consumer, has := p.resConsumers[ctx.id]
-			if has {
-				delete(p.resWaitlist, ctx.id)
-				delete(p.resConsumers, ctx.id)
-				consumer.ctx = ctx.ctx
-				cancel := consumer.cancel
-				consumer.cancel = ctx.cancel
-				cancel()
-			}
-
-		case ctx := <-p.resLeave:
-			delete(p.resWaitlist, ctx.id)
-
-		case ctx := <-p.consumerLeave:
-			p.del(p.reqConsumers, ctx.subdomain, ctx.id)
-			delete(p.resConsumers, ctx.id)
-		}
-
-		p.updateStatus()
-	}
-}
-
-func (p *proxy) dequeue(dict map[string]map[string]*proxyCtx, subdomain string) *proxyCtx {
-	list, has := dict[subdomain]
-	if has {
-		for id, ctx := range list {
-			p.del(dict, subdomain, id)
-			return ctx
+	} else {
+		subdomain = strings.Replace(ctx.Request.Host, "."+p.host, "", 1)
+		if isWebsocket(ctx) {
+			itemType = itemWSReq
+		} else {
+			itemType = itemReq
 		}
 	}
-	return nil
-}
-
-func (p *proxy) add(dict map[string]map[string]*proxyCtx, subdomain, id string, ctx *proxyCtx) {
-	if _, has := dict[subdomain]; !has {
-		dict[ctx.subdomain] = map[string]*proxyCtx{}
-	}
-
-	dict[ctx.subdomain][ctx.id] = ctx
-}
-
-func (p *proxy) del(dict map[string]map[string]*proxyCtx, subdomain, id string) {
-	delete(dict[subdomain], id)
-
-	if len(dict[subdomain]) == 0 {
-		delete(dict, subdomain)
-	}
-}
-
-func (p *proxy) handleReq(subdomain string, ctx kit.GinContext) {
-	wait, cancel := context.WithCancel(ctx.Request.Context())
 
 	id := ctx.GetHeader("Digto-ID")
 	if id == "" {
 		id = randString()
 	}
 
-	c := &proxyCtx{
+	_ = proxyItem{
 		id:        id,
+		itemType:  itemType,
 		subdomain: subdomain,
-		cancel:    cancel,
 		ctx:       ctx,
 	}
-
-	p.req <- c
-
-	<-wait.Done()
-
-	p.reqLeave <- c
-}
-
-func (p *proxy) handleRes(subdomain string, ctx kit.GinContext) {
-	id := ctx.GetHeader("Digto-ID")
-	if id == "" {
-		apiError(ctx, "Digto-ID header is not set")
-		return
-	}
-
-	wait, cancel := context.WithCancel(ctx.Request.Context())
-
-	c := &proxyCtx{
-		id:        id,
-		subdomain: subdomain,
-		cancel:    cancel,
-		ctx:       ctx,
-	}
-	p.res <- c
-
-	<-wait.Done()
-
-	p.resLeave <- c
-}
-
-func (p *proxy) handleConsumer(ctx kit.GinContext) {
-	if isWebsocket(ctx) {
-		p.handleWebsocket(ctx)
-		return
-	}
-
-	wait, cancel := context.WithCancel(ctx.Request.Context())
-	subdomain := strings.Replace(ctx.Request.Host, "."+p.host, "", 1)
-	id := randString()
-
-	msg := &proxyCtx{
-		subdomain: subdomain,
-		id:        id,
-		cancel:    cancel,
-	}
-
-	p.consumer <- msg
-
-	<-wait.Done()
-
-	msg.ctx.Header("Digto-ID", id)
-	msg.ctx.Header("Digto-Method", ctx.Request.Method)
-	msg.ctx.Header("Digto-URL", ctx.Request.URL.String())
-
-	for k, l := range ctx.Request.Header {
-		for _, v := range l {
-			msg.ctx.Writer.Header().Add(k, v)
-		}
-	}
-	msg.ctx.Writer.Header().Add("Host", ctx.Request.Host)
-
-	_, err := io.Copy(msg.ctx.Writer, ctx.Request.Body)
-	if err != nil {
-		apiError(ctx, err.Error())
-		apiError(msg.ctx, err.Error())
-	}
-	msg.cancel()
-
-	wait, cancel = context.WithCancel(ctx.Request.Context())
-	msg.cancel = cancel
-	p.reqHeaderDone <- msg
-	<-wait.Done()
-
-	status := msg.ctx.GetHeader("Digto-Status")
-	if status == "" {
-		status = "200"
-	}
-	code, _ := strconv.ParseInt(status, 10, 32)
-	ctx.Status(int(code))
-
-	for k, l := range msg.ctx.Request.Header {
-		if strings.HasPrefix(k, "Digto") {
-			continue
-		}
-		for _, v := range l {
-			ctx.Writer.Header().Add(k, v)
-		}
-	}
-
-	_, err = io.Copy(ctx.Writer, msg.ctx.Request.Body)
-	if err != nil {
-		apiError(ctx, err.Error())
-		apiError(msg.ctx, err.Error())
-	}
-
-	msg.cancel()
-
-	p.consumerLeave <- msg
-}
-
-func (p *proxy) handleWebsocket(ctx kit.GinContext) {
-	wait, cancel := context.WithCancel(ctx.Request.Context())
-	subdomain := strings.Replace(ctx.Request.Host, "."+p.host, "", 1)
-	id := randString()
-
-	msg := &proxyCtx{
-		subdomain: subdomain,
-		id:        id,
-		cancel:    cancel,
-	}
-
-	p.consumer <- msg
-
-	<-wait.Done()
-
-	msg.ctx.Header("Digto-ID", id)
-	msg.ctx.Header("Digto-Method", ctx.Request.Method)
-	msg.ctx.Header("Digto-URL", ctx.Request.URL.String())
-
-	for k, l := range ctx.Request.Header {
-		for _, v := range l {
-			msg.ctx.Writer.Header().Add(k, v)
-		}
-	}
-	msg.ctx.Writer.Header().Add("Host", ctx.Request.Host)
-
-	go func() {
-
-	}()
 }
 
 func isWebsocket(ctx kit.GinContext) bool {
 	return ctx.GetHeader("Upgrade") == "websocket"
-}
-
-func (p *proxy) updateStatus() {
-	p.status = map[string]interface{}{
-		"reqConsumers": len(p.reqConsumers),
-		"resConsumers": len(p.resConsumers),
-		"reqWaitlist":  len(p.reqWaitlist),
-		"resWaitlist":  len(p.resWaitlist),
-	}
 }
