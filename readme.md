@@ -131,8 +131,9 @@ Other-Headers: value
 Digto will proxy the rest headers transparently.
 
 If the public request is websocket, the first GET will only return the header, the following GETs will read the
-message with an extra header to tell the websocket message type, for example: `Digto-Type: binary`. Supported
-types are `text`, `binary`, `ping`, `pong`, `close`.
+messages. They must carry the same `Digto-ID` from the first response.
+The response will contain an extra header to tell the websocket message type, for example: `Digto-Type: binary`.
+Supported types are `text`, `binary`, `ping`, `pong`, `close`
 
 ### POST `/{subdomain}`
 
