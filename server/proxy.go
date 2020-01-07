@@ -156,8 +156,13 @@ func (p *proxy) del(dict map[string]map[string]*proxyCtx, subdomain, id string) 
 func (p *proxy) handleReq(subdomain string, ctx kit.GinContext) {
 	wait, cancel := context.WithCancel(ctx.Request.Context())
 
+	id := ctx.GetHeader("Digto-ID")
+	if id == "" {
+		id = randString()
+	}
+
 	c := &proxyCtx{
-		id:        randString(),
+		id:        id,
 		subdomain: subdomain,
 		cancel:    cancel,
 		ctx:       ctx,
@@ -193,6 +198,11 @@ func (p *proxy) handleRes(subdomain string, ctx kit.GinContext) {
 }
 
 func (p *proxy) handleConsumer(ctx kit.GinContext) {
+	if isWebsocket(ctx) {
+		p.handleWebsocket(ctx)
+		return
+	}
+
 	wait, cancel := context.WithCancel(ctx.Request.Context())
 	subdomain := strings.Replace(ctx.Request.Host, "."+p.host, "", 1)
 	id := randString()
@@ -255,6 +265,41 @@ func (p *proxy) handleConsumer(ctx kit.GinContext) {
 	msg.cancel()
 
 	p.consumerLeave <- msg
+}
+
+func (p *proxy) handleWebsocket(ctx kit.GinContext) {
+	wait, cancel := context.WithCancel(ctx.Request.Context())
+	subdomain := strings.Replace(ctx.Request.Host, "."+p.host, "", 1)
+	id := randString()
+
+	msg := &proxyCtx{
+		subdomain: subdomain,
+		id:        id,
+		cancel:    cancel,
+	}
+
+	p.consumer <- msg
+
+	<-wait.Done()
+
+	msg.ctx.Header("Digto-ID", id)
+	msg.ctx.Header("Digto-Method", ctx.Request.Method)
+	msg.ctx.Header("Digto-URL", ctx.Request.URL.String())
+
+	for k, l := range ctx.Request.Header {
+		for _, v := range l {
+			msg.ctx.Writer.Header().Add(k, v)
+		}
+	}
+	msg.ctx.Writer.Header().Add("Host", ctx.Request.Host)
+
+	go func() {
+
+	}()
+}
+
+func isWebsocket(ctx kit.GinContext) bool {
+	return ctx.GetHeader("Upgrade") == "websocket"
 }
 
 func (p *proxy) updateStatus() {
