@@ -1,6 +1,6 @@
 {
   "name": "digto",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A service to help to expose http/https service to public network for integration test.",
   "main": "index.js",
   "scripts": {

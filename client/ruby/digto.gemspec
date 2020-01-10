@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = 'digto'
-  s.version     = '0.0.2'
+  s.version     = '0.0.3'
   s.date        = '2019-12-24'
   s.summary     = 'Ruby implementaion for digto'
   s.description = 'https://github.com/ysmood/digto'
