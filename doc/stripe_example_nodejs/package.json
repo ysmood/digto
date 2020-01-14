@@ -1,0 +1,17 @@
+{
+  "name": "stripe_example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "digto": "^1.0.1",
+    "nokit": "^0.27.12",
+    "puppeteer": "^2.0.0",
+    "qs": "^6.9.1"
+  }
+}
