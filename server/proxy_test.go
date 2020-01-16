@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/ysmood/digto/server"
@@ -13,7 +14,7 @@ import (
 func TestBasic(t *testing.T) {
 	dir := "tmp/" + kit.RandString(16)
 
-	s, err := server.New(dir+"/digto.db", "", "", "digto.org", "", ":0", "")
+	s, err := server.New(dir+"/digto.db", "", "", "digto.org", "", ":0", "", 2*time.Minute)
 	kit.E(err)
 
 	go func() { kit.E(s.Serve()) }()
@@ -81,7 +82,7 @@ func TestBasic(t *testing.T) {
 func TestConcurent(t *testing.T) {
 	dir := "tmp/" + kit.RandString(16)
 
-	srv, err := server.New(dir+"/digto.db", "", "", "digto.org", "", ":0", "")
+	srv, err := server.New(dir+"/digto.db", "", "", "digto.org", "", ":0", "", 2*time.Minute)
 	kit.E(err)
 
 	go func() { kit.E(srv.Serve()) }()
@@ -135,11 +136,11 @@ func TestConcurent(t *testing.T) {
 func TestError(t *testing.T) {
 	dir := "tmp/" + kit.RandString(16)
 
-	_, err := server.New(dir+"/digto.db", "dnspod", "test", "digto.org", "", ":0", "")
+	_, err := server.New(dir+"/digto.db", "dnspod", "test", "digto.org", "", ":0", "", 2*time.Minute)
 	assert.Error(t, err)
 
 	assert.Panics(t, func() {
 		dir = "tmp/" + kit.RandString(16)
-		_, _ = server.New(dir+"/digto.db", "", "test", "digto.org", "", ":0", "")
+		_, _ = server.New(dir+"/digto.db", "", "test", "digto.org", "", ":0", "", 2*time.Minute)
 	})
 }

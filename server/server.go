@@ -4,8 +4,11 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
+	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/ysmood/digto/server/cert"
 	"github.com/ysmood/kit"
 	"github.com/ysmood/storer"
@@ -13,17 +16,19 @@ import (
 
 // Context ...
 type Context struct {
-	host      string
-	cert      *cert.Context
-	server    *kit.ServerContext
-	serverTLS *kit.ServerContext
-	proxy     *proxy
+	host          string
+	cert          *cert.Context
+	engine        *gin.Engine
+	httpListener  net.Listener
+	httpsListener net.Listener
+	timeout       time.Duration
+	proxy         *proxy
 
 	onError func(error)
 }
 
 // New ...
-func New(dbPath, dnsProvider, dnsConfig, host, caDirURL, httpAddr, httpsAddr string) (*Context, error) {
+func New(dbPath, dnsProvider, dnsConfig, host, caDirURL, httpAddr, httpsAddr string, timeout time.Duration) (*Context, error) {
 	store := storer.New(dbPath)
 	certCache := store.Value("cert-cache", &[]byte{})
 
@@ -37,22 +42,24 @@ func New(dbPath, dnsProvider, dnsConfig, host, caDirURL, httpAddr, httpsAddr str
 		return nil, err
 	}
 
-	server, err := kit.Server(httpAddr)
+	httpListener, err := net.Listen("tcp", httpAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	serverTLS, err := kit.Server(httpsAddr)
+	httpsListener, err := net.Listen("tcp", httpsAddr)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Context{
-		host:      host,
-		cert:      cert,
-		server:    server,
-		serverTLS: serverTLS,
-		proxy:     newProxy(host),
+		host:          host,
+		cert:          cert,
+		engine:        gin.New(),
+		httpListener:  httpListener,
+		httpsListener: httpsListener,
+		timeout:       timeout,
+		proxy:         newProxy(host),
 		onError: func(err error) {
 			log.Println(err)
 		},
@@ -61,26 +68,43 @@ func New(dbPath, dnsProvider, dnsConfig, host, caDirURL, httpAddr, httpsAddr str
 
 // GetServer ...
 func (ctx *Context) GetServer() *kit.ServerContext {
-	return ctx.server
+	return &kit.ServerContext{
+		Engine:   ctx.engine,
+		Listener: ctx.httpListener,
+	}
 }
 
 // Serve ...
 func (ctx *Context) Serve() error {
-	ctx.server.Engine.GET("/", ctx.homePage)
-	ctx.serverTLS.Engine.GET("/", ctx.homePage)
-	ctx.server.Engine.NoRoute(ctx.proxy.handler)
-	ctx.serverTLS.Engine.NoRoute(ctx.proxy.handler)
+	ctx.engine.GET("/", ctx.homePage)
+	ctx.engine.NoRoute(ctx.proxy.handler)
 
 	go ctx.proxy.eventLoop()
 
 	kit.Log(
 		"[digto] listen on",
-		ctx.server.Listener.Addr().String(),
-		ctx.serverTLS.Listener.Addr().String(),
+		ctx.httpListener.Addr().String(),
+		ctx.httpsListener.Addr().String(),
 	)
 
 	srv := &http.Server{
-		Handler: ctx.serverTLS.Engine,
+		Handler:           ctx.engine,
+		IdleTimeout:       ctx.timeout,
+		ReadHeaderTimeout: ctx.timeout,
+		ReadTimeout:       ctx.timeout,
+		WriteTimeout:      ctx.timeout,
+	}
+
+	go func() {
+		kit.Err("[digto]", srv.Serve(ctx.httpListener))
+	}()
+
+	tlsSrv := &http.Server{
+		Handler:           srv.Handler,
+		IdleTimeout:       srv.IdleTimeout,
+		ReadHeaderTimeout: srv.ReadHeaderTimeout,
+		ReadTimeout:       srv.ReadTimeout,
+		WriteTimeout:      srv.WriteTimeout,
 		TLSConfig: &tls.Config{
 			GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
 				return ctx.cert.Cert(), nil
@@ -88,11 +112,7 @@ func (ctx *Context) Serve() error {
 		},
 	}
 
-	go func() {
-		kit.Err("[digto]", ctx.server.Do())
-	}()
-
-	return srv.ServeTLS(ctx.serverTLS.Listener, "", "")
+	return tlsSrv.ServeTLS(ctx.httpsListener, "", "")
 }
 
 func (ctx *Context) homePage(ginCtx kit.GinContext) {

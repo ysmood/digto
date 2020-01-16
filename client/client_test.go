@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -14,7 +15,7 @@ import (
 )
 
 func TestBasic(t *testing.T) {
-	s, err := server.New("tmp/"+kit.RandString(16)+"/digto.db", "", "", "digto.org", "", ":0", "")
+	s, err := server.New("tmp/"+kit.RandString(16)+"/digto.db", "", "", "digto.org", "", ":0", "", 2*time.Minute)
 	kit.E(err)
 
 	go func() { kit.E(s.Serve()) }()
@@ -50,7 +51,7 @@ func TestBasic(t *testing.T) {
 }
 
 func TestOne(t *testing.T) {
-	s, err := server.New("tmp/"+kit.RandString(16)+"/digto.db", "", "", "digto.org", "", ":0", "")
+	s, err := server.New("tmp/"+kit.RandString(16)+"/digto.db", "", "", "digto.org", "", ":0", "", 2*time.Minute)
 	kit.E(err)
 
 	go func() { kit.E(s.Serve()) }()
@@ -84,7 +85,7 @@ func TestOne(t *testing.T) {
 }
 
 func TestServe(t *testing.T) {
-	s, err := server.New("tmp/"+kit.RandString(16)+"/digto.db", "", "", "digto.org", "", ":0", "")
+	s, err := server.New("tmp/"+kit.RandString(16)+"/digto.db", "", "", "digto.org", "", ":0", "", 2*time.Minute)
 	kit.E(err)
 
 	go func() { kit.E(s.Serve()) }()
@@ -118,6 +119,35 @@ func TestServe(t *testing.T) {
 	go srv.MustDo()
 
 	go c.Serve(srv.Listener.Addr().String(), "test.com", "")
+
+	wg.Wait()
+}
+
+func TestExec(t *testing.T) {
+	s, err := server.New("tmp/"+kit.RandString(16)+"/digto.db", "", "", "digto.org", "", ":0", "", 2*time.Minute)
+	kit.E(err)
+
+	go func() { kit.E(s.Serve()) }()
+
+	host := s.GetServer().Listener.Addr().String()
+
+	subdomain := kit.RandString(16)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		senderRes := kit.Req("http://" + host).Host(subdomain + ".digto.org").StringBody("echo ok").MustString()
+		assert.Equal(t, "ok\n", senderRes)
+
+		wg.Done()
+	}()
+
+	c := client.New(subdomain)
+	c.APIHost = host
+	c.APIScheme = "http"
+	c.APIHeaderHost = "digto.org"
+
+	go c.ServeExec()
 
 	wg.Wait()
 }

@@ -4,12 +4,18 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os/exec"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ysmood/kit"
 )
+
+// SchemeExec make the client accept and execute commands
+const SchemeExec = "exec"
 
 // One serves only one request with gin handler
 func (c *Client) One(handler func(kit.GinContext)) error {
@@ -67,6 +73,64 @@ func (c *Client) Serve(addr, overrideHost, scheme string) {
 			}
 
 			err = send(res.StatusCode, res.Header, res.Body)
+			if err != nil {
+				log.Println(err)
+			}
+		}()
+	}
+}
+
+// ServeExec run commands sent from
+func (c *Client) ServeExec() {
+	for {
+		req, send, err := c.Next()
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		go func() {
+			raw, err := ioutil.ReadAll(req.Body)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			data := kit.JSON(raw)
+			args := []string{}
+			if data.IsArray() {
+				for _, arg := range data.Array() {
+					args = append(args, arg.String())
+				}
+			} else {
+				args = strings.Split(string(raw), " ")
+			}
+
+			if len(args) == 0 {
+				return
+			}
+
+			cmd := exec.Command(args[0], args[1:]...)
+
+			stdout, err := cmd.StdoutPipe()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			stderr, err := cmd.StderrPipe()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			out := io.MultiReader(stdout, stderr)
+
+			err = cmd.Start()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			err = send(http.StatusOK, nil, out)
 			if err != nil {
 				log.Println(err)
 			}

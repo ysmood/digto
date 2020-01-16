@@ -23,9 +23,10 @@ func serve(cmd kit.TaskCmd) func() {
 	caDirURL := cmd.Flag("ca-dir-url", "acme ca dir url").Short('a').String()
 	httpAddr := cmd.Flag("http-addr", "http address to listen to").Short('p').Default(":80").TCP()
 	httpsAddr := cmd.Flag("https-addr", "https address to listen to").Short('s').Default(":443").TCP()
+	timeout := cmd.Flag("timeout", "global http timeout").Short('o').Default("2min").Duration()
 
 	return func() {
-		s, err := server.New(*dbPath, *dnsProvider, *dnsConfig, *host, *caDirURL, (*httpAddr).String(), (*httpsAddr).String())
+		s, err := server.New(*dbPath, *dnsProvider, *dnsConfig, *host, *caDirURL, (*httpAddr).String(), (*httpsAddr).String(), *timeout)
 		kit.E(err)
 		kit.E(s.Serve())
 	}
@@ -37,7 +38,9 @@ func proxy(cmd kit.TaskCmd) func() {
 	addr := cmd.Arg("addr", "the tcp address to proxy to").Default(":3000").TCP()
 	subdomain := cmd.Arg("subdomain", "the subdomain to use, default is random string").String()
 	hostHeader := cmd.Arg("host-header", "override the host header when making request to addr").String()
-	scheme := cmd.Flag("scheme", "scheme to when send request to addr").Short('s').Default("http").Enum("http", "https")
+	scheme := cmd.Flag("scheme", "scheme to use when send request to addr").Short('s').Default("http").Enum(
+		"http", "https", client.SchemeExec,
+	)
 
 	return func() {
 		if *subdomain == "" {
@@ -50,6 +53,10 @@ func proxy(cmd kit.TaskCmd) func() {
 
 		kit.Log("digto client:", c.PublicURL(), kit.C("->", "cyan"), addr)
 
-		c.Serve(addr, *hostHeader, *scheme)
+		if *scheme == client.SchemeExec {
+			c.ServeExec()
+		} else {
+			c.Serve(addr, *hostHeader, *scheme)
+		}
 	}
 }
