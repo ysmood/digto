@@ -23,7 +23,7 @@ func serve(cmd kit.TaskCmd) func() {
 	caDirURL := cmd.Flag("ca-dir-url", "acme ca dir url").Short('a').String()
 	httpAddr := cmd.Flag("http-addr", "http address to listen to").Short('p').Default(":80").TCP()
 	httpsAddr := cmd.Flag("https-addr", "https address to listen to").Short('s').Default(":443").TCP()
-	timeout := cmd.Flag("timeout", "global http timeout").Short('o').Default("2min").Duration()
+	timeout := cmd.Flag("timeout", "global http timeout").Short('o').Default("2m").Duration()
 
 	return func() {
 		s, err := server.New(*dbPath, *dnsProvider, *dnsConfig, *host, *caDirURL, (*httpAddr).String(), (*httpsAddr).String(), *timeout)

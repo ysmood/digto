@@ -19,6 +19,7 @@ const SchemeExec = "exec"
 
 // One serves only one request with gin handler
 func (c *Client) One(handler func(kit.GinContext)) error {
+	gin.SetMode(gin.ReleaseMode)
 	engine := gin.New()
 	engine.NoRoute(handler)
 
