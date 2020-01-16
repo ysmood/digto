@@ -52,6 +52,8 @@ func New(dbPath, dnsProvider, dnsConfig, host, caDirURL, httpAddr, httpsAddr str
 		return nil, err
 	}
 
+	gin.SetMode(gin.ReleaseMode)
+
 	return &Context{
 		host:          host,
 		cert:          cert,
