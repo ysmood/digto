@@ -105,6 +105,17 @@ func (c *Client) Next() (*http.Request, Send, error) {
 	return receiverReq, send, nil
 }
 
+// Exec executes a command on remote
+func (c *Client) Exec(args ...string) (io.Reader, error) {
+	host := c.Subdomain + "." + c.APIHeaderHost
+
+	res, err := kit.Req(c.APIScheme + "://" + c.APIHost).Post().Host(host).JSONBody(args).Response()
+	if err != nil {
+		return nil, err
+	}
+	return res.Body, nil
+}
+
 func resError(res *http.Response, err error) (*http.Response, error) {
 	if err != nil {
 		return nil, err

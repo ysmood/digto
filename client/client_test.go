@@ -2,6 +2,7 @@ package client_test
 
 import (
 	"bytes"
+	"io/ioutil"
 	"net/http"
 	"sync"
 	"testing"
@@ -136,8 +137,16 @@ func TestExec(t *testing.T) {
 	wg.Add(1)
 
 	go func() {
-		senderRes := kit.Req("http://" + host).Host(subdomain + ".digto.org").StringBody("echo ok").MustString()
-		assert.Equal(t, "ok\n", senderRes)
+		c := client.New(subdomain)
+		c.APIScheme = "http"
+		c.APIHost = host
+		res, err := c.Exec("go", "version")
+		kit.E(err)
+
+		data, err := ioutil.ReadAll(res)
+		kit.E(err)
+
+		assert.Equal(t, kit.Exec("go", "version").MustString(), string(data))
 
 		wg.Done()
 	}()

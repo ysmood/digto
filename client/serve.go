@@ -69,7 +69,7 @@ func (c *Client) Serve(addr, overrideHost, scheme string) {
 			httpClient := &http.Client{}
 			res, err := httpClient.Do(req)
 			if err != nil {
-				log.Println(err)
+				resErr(send, err.Error())
 				return
 			}
 
@@ -93,7 +93,7 @@ func (c *Client) ServeExec() {
 		go func() {
 			raw, err := ioutil.ReadAll(req.Body)
 			if err != nil {
-				log.Println(err)
+				resErr(send, err.Error())
 				return
 			}
 
@@ -107,7 +107,8 @@ func (c *Client) ServeExec() {
 				args = strings.Split(string(raw), " ")
 			}
 
-			if len(args) == 0 {
+			if len(args) == 0 || args[0] == "" {
+				resErr(send, "empty args")
 				return
 			}
 
@@ -115,27 +116,34 @@ func (c *Client) ServeExec() {
 
 			stdout, err := cmd.StdoutPipe()
 			if err != nil {
-				log.Println(err)
+				resErr(send, err.Error())
 				return
 			}
 			stderr, err := cmd.StderrPipe()
 			if err != nil {
-				log.Println(err)
+				resErr(send, err.Error())
 				return
 			}
 			out := io.MultiReader(stdout, stderr)
 
 			err = cmd.Start()
 			if err != nil {
-				log.Println(err)
+				resErr(send, err.Error())
 				return
 			}
 
 			err = send(http.StatusOK, nil, out)
 			if err != nil {
-				log.Println(err)
+				resErr(send, err.Error())
 			}
 		}()
+	}
+}
+
+func resErr(send Send, msg string) {
+	err := send(http.StatusInternalServerError, nil, bytes.NewBufferString(msg))
+	if err != nil {
+		log.Println(err)
 	}
 }
 

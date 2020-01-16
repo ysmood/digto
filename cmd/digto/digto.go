@@ -1,6 +1,10 @@
 package main
 
 import (
+	"io"
+	"log"
+	"os"
+
 	"github.com/ysmood/digto/client"
 	"github.com/ysmood/digto/server"
 	"github.com/ysmood/kit"
@@ -12,6 +16,7 @@ func main() {
 	kit.Tasks().App(app).Add(
 		kit.Task("serve", "start server").Init(serve),
 		kit.Task("proxy", "proxy a subdomain to the tcp address").Init(proxy),
+		kit.Task("exec", "run a command on remote").Init(exec),
 	).Do()
 }
 
@@ -35,8 +40,8 @@ func serve(cmd kit.TaskCmd) func() {
 func proxy(cmd kit.TaskCmd) func() {
 	cmd.Default()
 
-	addr := cmd.Arg("addr", "the tcp address to proxy to").Default(":3000").TCP()
 	subdomain := cmd.Arg("subdomain", "the subdomain to use, default is random string").String()
+	addr := cmd.Arg("addr", "the tcp address to proxy to").Default(":3000").TCP()
 	hostHeader := cmd.Arg("host-header", "override the host header when making request to addr").String()
 	scheme := cmd.Flag("scheme", "scheme to use when send request to addr").Short('s').Default("http").Enum(
 		"http", "https", client.SchemeExec,
@@ -51,12 +56,30 @@ func proxy(cmd kit.TaskCmd) func() {
 
 		addr := (*addr).String()
 
-		kit.Log("digto client:", c.PublicURL(), kit.C("->", "cyan"), addr)
-
 		if *scheme == client.SchemeExec {
+			kit.Log("digto client:", *subdomain)
 			c.ServeExec()
 		} else {
+			kit.Log("digto client:", c.PublicURL(), kit.C("->", "cyan"), addr)
 			c.Serve(addr, *hostHeader, *scheme)
+		}
+	}
+}
+
+func exec(cmd kit.TaskCmd) func() {
+	subdomain := cmd.Arg("subdomain", "the subdomain to use, default is random string").Required().String()
+	args := cmd.Arg("cmd", "the tcp address to proxy to").Required().Strings()
+
+	return func() {
+		c := client.New(*subdomain)
+		res, err := c.Exec(*args...)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		_, err = io.Copy(os.Stdout, res)
+		if err != nil {
+			log.Println(err)
 		}
 	}
 }

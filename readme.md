@@ -12,7 +12,7 @@ For example you can easily use just `curl` command to serve public https request
 
 Install client: `curl -L https://git.io/fjaxx | repo=ysmood/digto sh`
 
-Run `digto :8080 my-domain` to proxy "https://my-domain.digto.org" to port 8080
+Run `digto my-domain :8080` to proxy "https://my-domain.digto.org" to port 8080
 
 ## Example Client
 
