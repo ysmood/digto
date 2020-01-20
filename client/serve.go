@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -112,6 +113,18 @@ func (c *Client) ServeExec() {
 				return
 			}
 
+			if isBuiltin, fn := c.execBuiltin(args); isBuiltin {
+				err := fn()
+				if err != nil {
+					resErr(send, err.Error())
+				}
+				err = send(http.StatusOK, nil, nil)
+				if err != nil {
+					resErr(send, err.Error())
+				}
+				return
+			}
+
 			cmd := exec.Command(args[0], args[1:]...)
 
 			stdout, err := cmd.StdoutPipe()
@@ -137,6 +150,20 @@ func (c *Client) ServeExec() {
 				resErr(send, err.Error())
 			}
 		}()
+	}
+}
+
+func (c *Client) execBuiltin(args []string) (bool, func() error) {
+	switch args[0] {
+	case "writefile":
+		return true, func() error {
+			if len(args) < 3 {
+				return errors.New("writefile requires 2 args")
+			}
+			return kit.OutputFile(args[1], args[2], nil)
+		}
+	default:
+		return false, nil
 	}
 }
 

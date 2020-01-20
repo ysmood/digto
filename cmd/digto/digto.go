@@ -68,7 +68,7 @@ func proxy(cmd kit.TaskCmd) func() {
 
 func exec(cmd kit.TaskCmd) func() {
 	subdomain := cmd.Arg("subdomain", "the subdomain to use, default is random string").Required().String()
-	args := cmd.Arg("cmd", "the tcp address to proxy to").Required().Strings()
+	args := cmd.Arg("cmd", "the tcp address to proxy to. Builtin cmds: writefile(path, str)").Required().Strings()
 
 	return func() {
 		c := client.New(*subdomain)
