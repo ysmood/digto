@@ -1,11 +1,9 @@
 package main
 
 import (
-	"context"
-
-	"github.com/chromedp/chromedp"
 	digto "github.com/ysmood/digto/client"
 	"github.com/ysmood/kit"
+	"github.com/ysmood/rod"
 )
 
 func main() {
@@ -20,8 +18,6 @@ func main() {
 		},
 	).MustJSON().Get("id").String()
 
-	kit.Log("get card token:", token)
-
 	url := req("https://api.stripe.com/v1/payment_intents").Post().Form(
 		"amount", "2000",
 		"currency", "usd",
@@ -35,18 +31,16 @@ func main() {
 		"return_url", dig.PublicURL(),
 	).MustJSON().Get("next_action.redirect_to_url.url").String()
 
-	kit.Log("get 3ds auth url:", url)
+	browser := rod.Open(nil)
+	defer browser.Close()
+	browser.Page(url).
+		Element("[name=__privateStripeFrame4]").Frame().
+		Element("#challengeFrame").Frame().
+		Element("#test-source-authorize-3ds").Click()
 
-	// handle the callback from stripe
-	go dig.One(func(ctx kit.GinContext) {
-		ctx.Writer.WriteString(`<html><body id="done-3ds">ok</body></html>`)
-	})
-
-	ctx, _ := chromedp.NewContext(context.Background())
-
-	kit.E(chromedp.Run(ctx,
-		chromedp.Navigate(url),
-	))
+	_, res, err := dig.Next()
+	kit.E(err)
+	kit.E(res(200, nil, nil))
 }
 
 func req(url string) *kit.ReqContext {

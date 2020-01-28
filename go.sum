@@ -348,6 +348,10 @@ github.com/ysmood/ddns v0.1.1/go.mod h1:vvgR64LsRX85vFdcBbjGzffj+bhLuUha/Nm5kqOM
 github.com/ysmood/kit v0.15.0/go.mod h1:CTrwSW71fHHXFKSCEs8iYWqR1R4xsD+4JbPbGi4PCuQ=
 github.com/ysmood/kit v0.17.1 h1:LH7WTjXeBu6hGZ8a3HVtp0KJxuyyQYdEIoIxbTSjTi0=
 github.com/ysmood/kit v0.17.1/go.mod h1:vlMfce6eL0jSqDkYtUXid4VPvA5Cw+CwfiYHwv1iMVA=
+github.com/ysmood/kit v0.19.1 h1:C23oppqRpmlqyrVcC/EFWXu5VlBvD4UeRjAAR1IAUlo=
+github.com/ysmood/kit v0.19.1/go.mod h1:q+qlHOnimF2fjHkJpjySiIWePM8pplsZLVxGnPIMkc8=
+github.com/ysmood/lookpath v1.1.0 h1:heliJRj3thM8qw7236g5qDeI+vKELGndm+SWzwjxHqI=
+github.com/ysmood/lookpath v1.1.0/go.mod h1:QQh4rXcDdYAacpl7Q8cgZqkf+NRMJ4wc+lpQp0FgW+0=
 github.com/ysmood/myip v0.0.0-20190514144300-6576fde8f6c5/go.mod h1:bFlhE3USBVqP9q8XUaZZhU/Z1yUZ7cjXlXeitobanxk=
 github.com/ysmood/myip v0.0.1 h1:DXeaHpZSY3BTvpSbfTokeqowRwNi3CsjLCsrrqzOWCY=
 github.com/ysmood/myip v0.0.1/go.mod h1:bFlhE3USBVqP9q8XUaZZhU/Z1yUZ7cjXlXeitobanxk=
@@ -428,6 +432,8 @@ golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20191026070338-33540a1f6037/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 h1:gSbV7h1NRL2G1xTg/owz62CST1oJBmxy4QpMMregXVQ=
 golang.org/x/sys v0.0.0-20191210023423-ac6580df4449/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200116001909-b77594299b42 h1:vEOn+mP2zCOVzKckCZy6YsCtDblrpj/w7B9nxGNELpg=
+golang.org/x/sys v0.0.0-20200116001909-b77594299b42/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.2 h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=
