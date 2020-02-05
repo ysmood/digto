@@ -123,6 +123,7 @@ func (c *Client) serveExec(req *http.Request, send Send) {
 		err := fn()
 		if err != nil {
 			resErr(send, err.Error())
+			return
 		}
 		err = send(http.StatusOK, nil, nil)
 		if err != nil {

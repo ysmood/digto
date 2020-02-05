@@ -109,9 +109,13 @@ func (c *Client) Next() (*http.Request, Send, error) {
 func (c *Client) Exec(args ...string) (io.Reader, error) {
 	host := c.Subdomain + "." + c.APIHeaderHost
 
-	res, err := kit.Req(c.APIScheme + "://" + c.APIHost).Post().Host(host).JSONBody(args).Response()
+	req := kit.Req(c.APIScheme + "://" + c.APIHost).Post().Host(host).JSONBody(args)
+	res, err := req.Response()
 	if err != nil {
 		return nil, err
+	}
+	if res.StatusCode != 200 {
+		return nil, errors.New(req.MustString())
 	}
 	return res.Body, nil
 }

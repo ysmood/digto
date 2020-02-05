@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -133,23 +134,6 @@ func TestExec(t *testing.T) {
 	host := s.GetServer().Listener.Addr().String()
 
 	subdomain := kit.RandString(16)
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-
-	go func() {
-		c := client.New(subdomain)
-		c.APIScheme = "http"
-		c.APIHost = host
-		res, err := c.Exec("go", "version")
-		kit.E(err)
-
-		data, err := ioutil.ReadAll(res)
-		kit.E(err)
-
-		assert.Equal(t, kit.Exec("go", "version").MustString(), string(data))
-
-		wg.Done()
-	}()
 
 	c := client.New(subdomain)
 	c.APIHost = host
@@ -158,5 +142,25 @@ func TestExec(t *testing.T) {
 
 	go c.ServeExec()
 
-	wg.Wait()
+	sc := client.New(subdomain)
+	sc.APIScheme = "http"
+	sc.APIHost = host
+	res, err := sc.Exec("go", "version")
+	kit.E(err)
+
+	data, err := ioutil.ReadAll(res)
+	kit.E(err)
+
+	assert.Equal(t, kit.Exec("go", "version").MustString(), string(data))
+
+	_, err = sc.Exec("writefile")
+	assert.EqualError(t, err, "writefile requires 2 args")
+
+	file := "tmp/" + kit.RandString(16)
+	kit.Req("http://" + host).
+		Post().
+		Host(subdomain + ".digto.org").
+		StringBody(strings.Join([]string{"writefile", file, "ok"}, " ")).
+		MustDo()
+	assert.Equal(t, "ok", kit.E(kit.ReadString(file))[0])
 }
