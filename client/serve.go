@@ -58,27 +58,29 @@ func (c *Client) Serve(addr, overrideHost, scheme string) {
 			continue
 		}
 
-		go func() {
-			log.Println("[access log]", kit.C(req.Method, "green"), req.URL.String())
+		go c.serve(addr, overrideHost, scheme, req, send)
+	}
+}
 
-			req.URL.Scheme = scheme
-			req.URL.Host = addr
-			if overrideHost != "" {
-				req.Host = overrideHost
-			}
+func (c *Client) serve(addr, overrideHost, scheme string, req *http.Request, send Send) {
+	log.Println("[access log]", kit.C(req.Method, "green"), req.URL.String())
 
-			httpClient := &http.Client{}
-			res, err := httpClient.Do(req)
-			if err != nil {
-				resErr(send, err.Error())
-				return
-			}
+	req.URL.Scheme = scheme
+	req.URL.Host = addr
+	if overrideHost != "" {
+		req.Host = overrideHost
+	}
 
-			err = send(res.StatusCode, res.Header, res.Body)
-			if err != nil {
-				log.Println(err)
-			}
-		}()
+	httpClient := &http.Client{}
+	res, err := httpClient.Do(req)
+	if err != nil {
+		resErr(send, err.Error())
+		return
+	}
+
+	err = send(res.StatusCode, res.Header, res.Body)
+	if err != nil {
+		log.Println(err)
 	}
 }
 
@@ -91,65 +93,67 @@ func (c *Client) ServeExec() {
 			continue
 		}
 
-		go func() {
-			raw, err := ioutil.ReadAll(req.Body)
-			if err != nil {
-				resErr(send, err.Error())
-				return
-			}
+		go c.serveExec(req, send)
+	}
+}
 
-			data := kit.JSON(raw)
-			args := []string{}
-			if data.IsArray() {
-				for _, arg := range data.Array() {
-					args = append(args, arg.String())
-				}
-			} else {
-				args = strings.Split(string(raw), " ")
-			}
+func (c *Client) serveExec(req *http.Request, send Send) {
+	raw, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		resErr(send, err.Error())
+		return
+	}
 
-			if len(args) == 0 || args[0] == "" {
-				resErr(send, "empty args")
-				return
-			}
+	data := kit.JSON(raw)
+	args := []string{}
+	if data.IsArray() {
+		for _, arg := range data.Array() {
+			args = append(args, arg.String())
+		}
+	} else {
+		args = strings.Split(string(raw), " ")
+	}
 
-			if isBuiltin, fn := c.execBuiltin(args); isBuiltin {
-				err := fn()
-				if err != nil {
-					resErr(send, err.Error())
-				}
-				err = send(http.StatusOK, nil, nil)
-				if err != nil {
-					resErr(send, err.Error())
-				}
-				return
-			}
+	if len(args) == 0 || args[0] == "" {
+		resErr(send, "empty args")
+		return
+	}
 
-			cmd := exec.Command(args[0], args[1:]...)
+	if isBuiltin, fn := c.execBuiltin(args); isBuiltin {
+		err := fn()
+		if err != nil {
+			resErr(send, err.Error())
+		}
+		err = send(http.StatusOK, nil, nil)
+		if err != nil {
+			resErr(send, err.Error())
+		}
+		return
+	}
 
-			stdout, err := cmd.StdoutPipe()
-			if err != nil {
-				resErr(send, err.Error())
-				return
-			}
-			stderr, err := cmd.StderrPipe()
-			if err != nil {
-				resErr(send, err.Error())
-				return
-			}
-			out := io.MultiReader(stdout, stderr)
+	cmd := exec.Command(args[0], args[1:]...)
 
-			err = cmd.Start()
-			if err != nil {
-				resErr(send, err.Error())
-				return
-			}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		resErr(send, err.Error())
+		return
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		resErr(send, err.Error())
+		return
+	}
+	out := io.MultiReader(stdout, stderr)
 
-			err = send(http.StatusOK, nil, out)
-			if err != nil {
-				resErr(send, err.Error())
-			}
-		}()
+	err = cmd.Start()
+	if err != nil {
+		resErr(send, err.Error())
+		return
+	}
+
+	err = send(http.StatusOK, nil, out)
+	if err != nil {
+		resErr(send, err.Error())
 	}
 }
 
