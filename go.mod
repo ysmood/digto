@@ -1,14 +1,13 @@
 module github.com/ysmood/digto
 
-go 1.13
+go 1.14
 
 require (
-	github.com/gin-gonic/gin v1.5.0
-	github.com/go-acme/lego/v3 v3.2.0
-	github.com/stretchr/testify v1.4.0
-	github.com/ysmood/ddns v0.1.1
-	github.com/ysmood/kit v0.20.1
-	github.com/ysmood/myip v0.0.1
-	github.com/ysmood/storer v0.1.0
-	golang.org/x/sys v0.0.0-20200116001909-b77594299b42 // indirect
+	github.com/gin-gonic/gin v1.6.0
+	github.com/go-acme/lego/v3 v3.5.0
+	github.com/stretchr/testify v1.5.1
+	github.com/ysmood/ddns v0.2.3
+	github.com/ysmood/kit v0.22.2
+	github.com/ysmood/myip v1.0.0
+	github.com/ysmood/storer v0.1.1
 )

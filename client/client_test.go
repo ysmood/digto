@@ -2,7 +2,6 @@ package client_test
 
 import (
 	"bytes"
-	"io/ioutil"
 	"net/http"
 	"sync"
 	"testing"
@@ -120,43 +119,6 @@ func TestServe(t *testing.T) {
 	go srv.MustDo()
 
 	go c.Serve(srv.Listener.Addr().String(), "test.com", "")
-
-	wg.Wait()
-}
-
-func TestExec(t *testing.T) {
-	s, err := server.New("tmp/"+kit.RandString(16)+"/digto.db", "", "", "digto.org", "", ":0", "", 2*time.Minute)
-	kit.E(err)
-
-	go func() { kit.E(s.Serve()) }()
-
-	host := s.GetServer().Listener.Addr().String()
-
-	subdomain := kit.RandString(16)
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-
-	go func() {
-		c := client.New(subdomain)
-		c.APIScheme = "http"
-		c.APIHost = host
-		res, err := c.Exec("go", "version")
-		kit.E(err)
-
-		data, err := ioutil.ReadAll(res)
-		kit.E(err)
-
-		assert.Equal(t, kit.Exec("go", "version").MustString(), string(data))
-
-		wg.Done()
-	}()
-
-	c := client.New(subdomain)
-	c.APIHost = host
-	c.APIScheme = "http"
-	c.APIHeaderHost = "digto.org"
-
-	go c.ServeExec()
 
 	wg.Wait()
 }
