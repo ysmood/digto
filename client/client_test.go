@@ -164,3 +164,30 @@ func TestExec(t *testing.T) {
 		MustDo()
 	assert.Equal(t, "ok", kit.E(kit.ReadString(file))[0])
 }
+
+func TestExecTimeout(t *testing.T) {
+	s, err := server.New("tmp/"+kit.RandString(16)+"/digto.db", "", "", "digto.org", "", ":0", "", 1*time.Second)
+	kit.E(err)
+
+	go func() { kit.E(s.Serve()) }()
+
+	host := s.GetServer().Listener.Addr().String()
+
+	subdomain := kit.RandString(16)
+
+	c := client.New(subdomain)
+	c.APIHost = host
+	c.APIScheme = "http"
+	c.APIHeaderHost = "digto.org"
+
+	go c.ServeExec()
+
+	kit.Sleep(2)
+
+	sc := client.New(subdomain)
+	sc.APIScheme = "http"
+	sc.APIHost = host
+	res, err := sc.Exec("go", "version")
+	kit.E(err)
+	kit.Log(ioutil.ReadAll(res))
+}

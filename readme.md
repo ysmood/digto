@@ -14,10 +14,6 @@ Install client: `curl -L https://git.io/fjaxx | repo=ysmood/digto sh`
 
 Run `digto my-domain :8080` to proxy "https://my-domain.digto.org" to port 8080
 
-## Example Client
-
-For a complete real-world example: [stripe example](doc/stripe_example_nodejs).
-
 ### `curl` only:
 
 Open a terminal run
