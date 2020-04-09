@@ -4,26 +4,27 @@
 [![codecov](https://codecov.io/gh/ysmood/digto/branch/master/graph/badge.svg)](https://codecov.io/gh/ysmood/digto)
 [![goreport](https://goreportcard.com/badge/github.com/ysmood/digto)](https://goreportcard.com/report/github.com/ysmood/digto)
 
-A service to help to expose http/https service to public network for integration test.
-All the interface is designed to be easily programmable.
-For example you can easily use just `curl` command to serve public https request without any other dependency.
+A service to help to expose HTTP/HTTPS service to the public network.
+The interface is designed to be easily programmable.
+For example you can use `curl` command only to serve public https request without any other dependency.
 
 ## Proxy a local port
 
-Install client: `curl -L https://git.io/fjaxx | repo=ysmood/digto sh`
+1. Install the client: `curl -L https://git.io/fjaxx | repo=ysmood/digto sh`
 
-Run `digto my-domain :8080` to proxy "https://my-domain.digto.org" to port 8080
+1. Run `digto my-domain :8080` to proxy `https://my-domain.digto.org` to port 8080
 
-### `curl` only:
+### Use `curl` only to handle a request
 
-Open a terminal run
+Open a terminal to send the request:
 
 ```bash
 curl https://my-subdomain.digto.org/path -d 'ping'
 # pong
 ```
 
-Open another terminal run:
+`my-subdomain` can be anything you want. As you can see the request will hang until we send a response back.
+Let's open a new terminal to send the response for it:
 
 ```bash
 curl -i https://digto.org/my-subdomain
@@ -34,8 +35,11 @@ curl -i https://digto.org/my-subdomain
 #
 # ping
 
+# the value of digto-id header must be the same as the previous one
 curl https://digto.org/my-subdomain -H 'digto-id: 3dd4e560' -d 'pong'
 ```
+
+After we send the response the previous terminal will print `pong`.
 
 ### Go
 
@@ -102,17 +106,17 @@ s.response(200, {}, body: 'it works')
 
 ## API
 
-A sequence OAuth diagram example:
+A OAuth sequence diagram example:
 
 ![diagram](doc/digto_sequence_diagram.svg)
 
-So the only dependency for a language to implement a client is a http lib.
-So usually, the client code can be only a few lines of code. This is nice to become part of auto-testing.
+The only dependency for a language to implement a client is an HTTP lib.
+Usually, the client code can be only a few lines of code. This is nice to become part of an auto-testing.
 Such as the integration test of OAuth and payment callbacks.
 
 ### GET `/{subdomain}`
 
-Get the request data from public.
+Get the request data from the public.
 
 The response is standard http response with 3 extra headers prefixed with `Digto` like:
 
@@ -130,9 +134,9 @@ Digto will proxy the rest headers transparently.
 
 ### POST `/{subdomain}`
 
-Send the response data to public.
+Send the response data back to the public.
 
-The request should be standard http request with 2 extra headers prefixed with `Digto` like:
+The request should be standard HTTP request with 2 extra headers prefixed with `Digto` like:
 
 ```text
 POST /test HTTP/1.1
@@ -147,7 +151,7 @@ The `{id}` is required, you have to send back the `{id}` from the previous respo
 
 ### Error
 
-If protocol level error happens the response will have the `Digto-Error: reason` header to report the reason.
+If a protocol-level error happens the response will have the `Digto-Error: reason` header to report the reason.
 
 ## Setup private digto server
 
@@ -162,7 +166,7 @@ So that all you need is to have the permission of the DNS provider and run the s
 
 Example to serve `digto serve --dns-config {token} --host test.com`
 
-The server will add two records on your dns provider, one is like `@.test.com 1.2.3.4`,
-the other one with wildcard like `*.test.com 1.2.3.4`.
+The server will add two records on your DNS provider, one is like `@.test.com 1.2.3.4`,
+the other one with a wildcard like `*.test.com 1.2.3.4`.
 
 For now only [dnspod](https://www.dnspod.com/?lang=en) is supported.
