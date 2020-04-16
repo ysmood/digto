@@ -193,6 +193,7 @@ func (ctx *Context) getProvider() (challenge.Provider, error) {
 	case "dnspod":
 		conf := dnspod.NewDefaultConfig()
 		conf.LoginToken = ctx.token
+		conf.HTTPClient.Timeout = 30 * time.Second
 		return dnspod.NewDNSProviderConfig(conf)
 	default:
 		panic("provider not supported: " + ctx.providerName)
