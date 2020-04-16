@@ -23,6 +23,8 @@ type Context struct {
 	httpsListener net.Listener
 	timeout       time.Duration
 	proxy         *proxy
+	store         *storer.Store
+	reqCounter    *storer.Value
 
 	onError func(error)
 }
@@ -54,6 +56,8 @@ func New(dbPath, dnsProvider, dnsConfig, host, caDirURL, httpAddr, httpsAddr str
 
 	gin.SetMode(gin.ReleaseMode)
 
+	reqCount := 0
+
 	return &Context{
 		host:          host,
 		cert:          cert,
@@ -62,6 +66,8 @@ func New(dbPath, dnsProvider, dnsConfig, host, caDirURL, httpAddr, httpsAddr str
 		httpsListener: httpsListener,
 		timeout:       timeout,
 		proxy:         newProxy(host),
+		store:         store,
+		reqCounter:    store.Value("reqCount", &reqCount),
 		onError: func(err error) {
 			log.Println(err)
 		},
@@ -79,7 +85,14 @@ func (ctx *Context) GetServer() *kit.ServerContext {
 // Serve ...
 func (ctx *Context) Serve() error {
 	ctx.engine.GET("/", ctx.homePage)
-	ctx.engine.NoRoute(ctx.proxy.handler)
+	ctx.engine.NoRoute(func(g *gin.Context) {
+		err := ctx.count()
+		if err != nil {
+			kit.Err(err)
+		}
+
+		ctx.proxy.handler(g)
+	})
 
 	go ctx.proxy.eventLoop()
 
@@ -117,6 +130,19 @@ func (ctx *Context) Serve() error {
 	return tlsSrv.ServeTLS(ctx.httpsListener, "", "")
 }
 
+func (ctx *Context) count() error {
+	return ctx.store.Update(func(txn storer.Txn) error {
+		var v int
+		t := ctx.reqCounter.Txn(txn)
+		err := t.Get(&v)
+		if err != nil {
+			return err
+		}
+		v++
+		return t.Set(&v)
+	})
+}
+
 func (ctx *Context) homePage(ginCtx kit.GinContext) {
 	if ginCtx.Request.Host != ctx.host || ginCtx.Request.URL.Path != "/" {
 		ctx.proxy.handler(ginCtx)
@@ -125,13 +151,24 @@ func (ctx *Context) homePage(ginCtx kit.GinContext) {
 
 	proxyStatus, _ := json.MarshalIndent(ctx.proxy.status, "", "  ")
 
+	var count int
+	err := ctx.reqCounter.Get(&count)
+	if err != nil {
+		kit.Err(err)
+	}
+
 	params := []interface{}{
 		"version", Version,
+		"count", count,
 		"proxyStatus", string(proxyStatus),
 	}
 
 	ginCtx.String(http.StatusOK, kit.S(`
 # Digto {{.version}}
+
+## Request Count
+
+{{.count}}
 
 ## Proxy Status
 
