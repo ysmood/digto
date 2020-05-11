@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -47,7 +46,7 @@ func (c *Client) Serve(addr, overrideHost, scheme string) {
 	for {
 		req, send, err := c.Next()
 		if err != nil {
-			log.Println(err)
+			c.Log(err)
 			continue
 		}
 
@@ -56,7 +55,7 @@ func (c *Client) Serve(addr, overrideHost, scheme string) {
 }
 
 func (c *Client) serve(addr, overrideHost, scheme string, req *http.Request, send Send) {
-	log.Println("[access log]", kit.C(req.Method, "green"), req.URL.String())
+	c.Log("[access log]", kit.C(req.Method, "green"), req.URL.String())
 
 	req.URL.Scheme = scheme
 	req.URL.Host = addr
@@ -67,20 +66,20 @@ func (c *Client) serve(addr, overrideHost, scheme string, req *http.Request, sen
 	httpClient := &http.Client{}
 	res, err := httpClient.Do(req)
 	if err != nil {
-		resErr(send, err.Error())
+		c.resErr(send, err.Error())
 		return
 	}
 
 	err = send(res.StatusCode, res.Header, res.Body)
 	if err != nil {
-		log.Println(err)
+		c.Log(err)
 	}
 }
 
-func resErr(send Send, msg string) {
+func (c *Client) resErr(send Send, msg string) {
 	err := send(http.StatusInternalServerError, nil, bytes.NewBufferString(msg))
 	if err != nil {
-		log.Println(err)
+		c.Log(err)
 	}
 }
 

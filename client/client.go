@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -27,6 +28,8 @@ type Client struct {
 	APIHeaderHost string
 
 	httpClient *http.Client
+
+	Log func(...interface{})
 }
 
 // Send response back to the public request
@@ -41,6 +44,9 @@ func New(subdomain string) *Client {
 		APIHeaderHost: "digto.org",
 		Subdomain:     subdomain,
 		httpClient:    &http.Client{},
+		Log: func(s ...interface{}) {
+			log.Println(s...)
+		},
 	}
 }
 
