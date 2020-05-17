@@ -41,6 +41,7 @@ func proxy(cmd kit.TaskCmd) func() {
 	scheme := cmd.Flag("scheme", "scheme to use when send request to addr").Short('s').Default("http").Enum(
 		"http", "https",
 	)
+	accessLog := cmd.Flag("access-log", "whether to print access log or not").Short('l').Bool()
 
 	return func() {
 		if *subdomain == "" {
@@ -48,6 +49,12 @@ func proxy(cmd kit.TaskCmd) func() {
 		}
 
 		c := client.New(*subdomain)
+
+		if *accessLog {
+			c.Log = func(s ...interface{}) {
+				kit.Log(s...)
+			}
+		}
 
 		addr := (*addr).String()
 

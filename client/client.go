@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -44,9 +43,7 @@ func New(subdomain string) *Client {
 		APIHeaderHost: "digto.org",
 		Subdomain:     subdomain,
 		httpClient:    &http.Client{},
-		Log: func(s ...interface{}) {
-			log.Println(s...)
-		},
+		Log:           func(s ...interface{}) {},
 	}
 }
 
